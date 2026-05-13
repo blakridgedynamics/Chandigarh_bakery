@@ -1,54 +1,116 @@
-import { FormEvent } from "react";
+import { FormEvent, useState } from "react";
 import Layout from "@/components/layout/Layout";
-import { MapPin, Phone, Mail, MessageCircle } from "lucide-react";
+import { MapPin, Phone, Mail, MessageCircle, Send } from "lucide-react";
 import { toast } from "sonner";
 import { waGeneric } from "@/lib/whatsapp";
+import { MessagesApi } from "@/lib/api";
+
+const inputClass =
+  "mt-1 w-full rounded-lg border border-border bg-background px-4 py-3 text-sm outline-none transition-smooth focus:border-primary focus:ring-2 focus:ring-ring/20";
 
 const Contact = () => {
-  const submit = (e: FormEvent) => {
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    toast.success("Thanks! We'll get back to you within a few hours.");
-    (e.target as HTMLFormElement).reset();
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    const payload = {
+      name: String(data.get("name") || "").trim(),
+      email: String(data.get("email") || "").trim(),
+      phone: String(data.get("phone") || "").trim() || undefined,
+      subject: String(data.get("subject") || "").trim() || undefined,
+      message: String(data.get("message") || "").trim(),
+    };
+
+    if (!payload.name || !payload.email || !payload.message) {
+      toast.error("Please fill in your name, email and message.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await MessagesApi.create(payload);
+      toast.success("Thanks. We will get back to you soon.");
+      form.reset();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not send your message.");
+    } finally {
+      setLoading(false);
+    }
   };
+
   return (
     <Layout>
       <section className="container py-14 md:py-20">
-        <div className="text-center mb-12">
-          <p className="text-xs uppercase tracking-[0.18em] text-primary font-semibold mb-2">Say hello</p>
-          <h1 className="font-display text-4xl md:text-5xl">We'd love to hear from you</h1>
-          <p className="text-muted-foreground mt-3 max-w-lg mx-auto">For custom orders, bulk inquiries or just a friendly chat — drop us a message.</p>
-          <a href={waGeneric()} target="_blank" rel="noreferrer" className="mt-6 inline-flex items-center gap-2 bg-[hsl(142_55%_38%)] text-white px-6 py-3.5 rounded-full font-semibold shadow-warm hover-lift">
+        <div className="mb-12 text-center">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Say hello</p>
+          <h1 className="font-display text-4xl md:text-5xl">We would love to hear from you</h1>
+          <p className="mx-auto mt-3 max-w-lg text-muted-foreground">
+            For custom orders, bulk enquiries or a quick bakery question, drop us a message.
+          </p>
+          <a
+            href={waGeneric()}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[hsl(142_55%_38%)] px-6 py-3.5 font-semibold text-white shadow-warm hover-lift"
+          >
             <MessageCircle className="h-4 w-4" /> Chat on WhatsApp
           </a>
         </div>
 
-        <div className="grid lg:grid-cols-[1fr_1.2fr] gap-10">
+        <div className="grid gap-10 lg:grid-cols-[1fr_1.2fr]">
           <div className="space-y-5">
             {[
               { icon: MapPin, title: "Visit", text: "Sector 9, Chandigarh, India 160009" },
-              { icon: Phone, title: "Call", text: "+91 98765 43210" },
+              { icon: Phone, title: "Call", text: "+91 97794 74708" },
               { icon: Mail, title: "Email", text: "hello@chandigarhbakery.in" },
               { icon: MessageCircle, title: "WhatsApp", text: "Tap the green button to chat instantly" },
-            ].map(c => (
-              <div key={c.title} className="bg-card rounded-2xl p-5 shadow-card border border-border/40 flex gap-4">
-                <div className="h-11 w-11 rounded-full bg-secondary text-primary grid place-items-center shrink-0"><c.icon className="h-5 w-5" /></div>
-                <div><p className="font-semibold">{c.title}</p><p className="text-sm text-muted-foreground">{c.text}</p></div>
+            ].map(({ icon: Icon, title, text }) => (
+              <div key={title} className="flex gap-4 rounded-lg border border-border/40 bg-card p-5 shadow-card">
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-secondary text-primary">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-semibold">{title}</p>
+                  <p className="text-sm text-muted-foreground">{text}</p>
+                </div>
               </div>
             ))}
           </div>
 
-          <form onSubmit={submit} className="bg-card rounded-3xl p-8 shadow-warm border border-border/40 space-y-4">
-            <div className="grid sm:grid-cols-2 gap-4">
-              <label className="block"><span className="text-xs font-semibold text-muted-foreground">Name</span>
-                <input required className="mt-1 w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" /></label>
-              <label className="block"><span className="text-xs font-semibold text-muted-foreground">Email</span>
-                <input required type="email" className="mt-1 w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" /></label>
+          <form onSubmit={submit} className="space-y-4 rounded-lg border border-border/40 bg-card p-6 shadow-warm md:p-8">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="text-xs font-semibold text-muted-foreground">Name</span>
+                <input name="name" required className={inputClass} />
+              </label>
+              <label className="block">
+                <span className="text-xs font-semibold text-muted-foreground">Email</span>
+                <input name="email" required type="email" className={inputClass} />
+              </label>
             </div>
-            <label className="block"><span className="text-xs font-semibold text-muted-foreground">Subject</span>
-              <input className="mt-1 w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" /></label>
-            <label className="block"><span className="text-xs font-semibold text-muted-foreground">Message</span>
-              <textarea required rows={5} className="mt-1 w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none" /></label>
-            <button type="submit" className="bg-primary text-primary-foreground px-6 py-3.5 rounded-full font-semibold shadow-warm hover-lift">Send message</button>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="text-xs font-semibold text-muted-foreground">Phone</span>
+                <input name="phone" type="tel" className={inputClass} />
+              </label>
+              <label className="block">
+                <span className="text-xs font-semibold text-muted-foreground">Subject</span>
+                <input name="subject" className={inputClass} />
+              </label>
+            </div>
+            <label className="block">
+              <span className="text-xs font-semibold text-muted-foreground">Message</span>
+              <textarea name="message" required rows={5} className={`${inputClass} resize-none`} />
+            </label>
+            <button
+              type="submit"
+              disabled={loading}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3.5 font-semibold text-primary-foreground shadow-warm hover-lift disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Send className="h-4 w-4" /> {loading ? "Sending..." : "Send message"}
+            </button>
           </form>
         </div>
       </section>

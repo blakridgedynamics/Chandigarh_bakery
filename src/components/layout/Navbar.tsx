@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { waGeneric } from "@/lib/whatsapp";
 import logo from "@/assets/logo.png";
 import { cn } from "@/lib/utils";
+import NotificationMenu from "./NotificationMenu";
 
 const links = [
   { to: "/", label: "Home" },
@@ -52,9 +53,10 @@ const Navbar = () => {
           >
             <MessageCircle className="h-4 w-4" /> Order / Enquire
           </a>
+          <NotificationMenu />
           <button
             onClick={() => navigate(user ? "/dashboard" : "/login")}
-            className="p-2.5 rounded-full hover:bg-secondary transition-smooth"
+            className="rounded-md p-2.5 transition-smooth hover:bg-secondary"
             aria-label={user ? "Profile" : "Login"}
           >
             <UserIcon className="h-5 w-5" />
